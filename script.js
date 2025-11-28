@@ -1,148 +1,79 @@
-// ===== Mobile Nav Toggle =====
-const menuToggle = document.getElementById("menuToggle");
-const navMenu = document.getElementById("nav-menu");
+const dropdowns = document.querySelectorAll("select");
+const btn = document.querySelector("button");
+const fromCurr = document.querySelector(".from select");
+const toCurr = document.querySelector(".to select");
+const msg = document.querySelector(".msg");
 
-menuToggle.addEventListener("click", () => {
-  navMenu.classList.toggle("open");
-});
+// Currency → Country Code (for flags)
+const countries = {
+    "USD": "US",
+    "INR": "IN",
+    "EUR": "EU",
+    "AUD": "AU",
+    "GBP": "GB",
+    "JPY": "JP",
+    "CAD": "CA"
+};
 
-document.querySelectorAll(".nav-link").forEach((link) => {
-  link.addEventListener("click", () => navMenu.classList.remove("open"));
-});
+// Dummy exchange rates (for offline testing)
+const rates = {
+    "USD": { "INR": 83, "EUR": 0.92, "AUD": 1.52, "GBP": 0.79, "JPY": 148, "CAD": 1.37 },
+    "INR": { "USD": 0.012, "EUR": 0.011, "AUD": 0.018, "GBP": 0.0095, "JPY": 1.78, "CAD": 0.016 },
+    "EUR": { "USD": 1.09, "INR": 90, "AUD": 1.65, "GBP": 0.86, "JPY": 160, "CAD": 1.47 }
+    // add more if needed
+};
 
-// ===== Location Demo =====
-const findFoodBtn = document.getElementById("findFoodBtn");
-const locationInput = document.getElementById("locationInput");
+// 1️⃣ Add currencies to dropdowns
+for (let select of dropdowns) {
+    for (let currCode in countries) {
+        let option = document.createElement("option");
+        option.value = currCode;
+        option.innerText = currCode;
+        if (select.name === "from" && currCode === "USD") {
+            option.selected = true;
+        }
+        if (select.name === "to" && currCode === "INR") {
+            option.selected = true;
+        }
+        select.append(option);
+    }
 
-findFoodBtn.addEventListener("click", () => {
-  const value = locationInput.value.trim();
-  if (!value) {
-    alert("Please enter your location (demo).");
-    return;
-  }
-  alert(`Showing restaurants near "${value}" (portfolio demo).`);
-});
-
-// ===== Filters =====
-const filterButtons = document.querySelectorAll(".filter-btn");
-const restaurantCards = document.querySelectorAll(".restaurant-card");
-
-filterButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    filterButtons.forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-
-    const filter = btn.getAttribute("data-filter");
-    restaurantCards.forEach((card) => {
-      const category = card.getAttribute("data-category");
-      if (filter === "all" || filter === category) {
-        card.style.display = "flex";
-      } else {
-        card.style.display = "none";
-      }
+    select.addEventListener("change", (evt) => {
+        updateFlag(evt.target);
     });
-  });
-});
-
-// ===== Cart (Demo Logic) =====
-const addButtons = document.querySelectorAll(".add-to-cart");
-const cartList = document.getElementById("cartList");
-const cartCount = document.getElementById("cartCount");
-const cartTotal = document.getElementById("cartTotal");
-const checkoutBtn = document.getElementById("checkoutBtn");
-
-// Simple demo pricing
-const basePrice = 250; // assume each item ~₹250
-
-let cartItems = [];
-
-function renderCart() {
-  cartList.innerHTML = "";
-
-  if (cartItems.length === 0) {
-    const li = document.createElement("li");
-    li.classList.add("empty");
-    li.textContent = "No items yet. Add something tasty 🍕";
-    cartList.appendChild(li);
-    cartCount.textContent = "0";
-    cartTotal.textContent = "₹0";
-    return;
-  }
-
-  cartItems.forEach((item, index) => {
-    const li = document.createElement("li");
-
-    const left = document.createElement("span");
-    left.classList.add("item-name");
-    left.textContent = item;
-
-    const btn = document.createElement("button");
-    btn.classList.add("remove-item");
-    btn.textContent = "Remove";
-    btn.addEventListener("click", () => {
-      cartItems.splice(index, 1);
-      renderCart();
-    });
-
-    li.appendChild(left);
-    li.appendChild(btn);
-    cartList.appendChild(li);
-  });
-
-  cartCount.textContent = cartItems.length.toString();
-  cartTotal.textContent = `₹${cartItems.length * basePrice}`;
 }
 
-addButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const itemName = btn.getAttribute("data-item") || "Food Item";
-    cartItems.push(itemName);
-    renderCart();
-  });
-});
+// 2️⃣ Update flag when currency changes
+function updateFlag(element) {
+    let currCode = element.value;
+    let countryCode = countries[currCode];
+    let img = element.parentElement.querySelector("img");
+    img.src = `https://flagsapi.com/${countryCode}/flat/64.png`;
+}
 
-checkoutBtn.addEventListener("click", () => {
-  if (cartItems.length === 0) {
-    alert("Cart is empty. Add some items first (demo).");
-    return;
-  }
-  alert(
-    `Checkout successful! (Demo only)\n\nItems: ${cartItems.join(
-      ", "
-    )}\nTotal: ${cartItems.length * basePrice}`
-  );
-  cartItems = [];
-  renderCart();
-});
+// 3️⃣ Convert Currency (using dummy rates)
+btn.addEventListener("click", (evt) => {
+    evt.preventDefault();
+    let amount = document.querySelector(".amount input");
+    let amtVal = amount.value;
+    if (amtVal === "" || amtVal < 1) {
+        amtVal = 1;
+        amount.value = "1";
+    }
 
-renderCart();
+    let from = fromCurr.value;
+    let to = toCurr.value;
 
-// ===== Login Modal =====
-const loginBtn = document.getElementById("loginBtn");
-const loginModal = document.getElementById("loginModal");
-const closeModal = document.getElementById("closeModal");
+    if (from === to) {
+        msg.innerText = `${amtVal} ${from} = ${amtVal} ${to}`;
+        return;
+    }
 
-loginBtn.addEventListener("click", () => loginModal.classList.add("show"));
-closeModal.addEventListener("click", () => loginModal.classList.remove("show"));
-loginModal.addEventListener("click", (e) => {
-  if (e.target === loginModal) loginModal.classList.remove("show");
-});
-
-// ===== Login Form Demo =====
-const modalForm = document.querySelector(".modal-form");
-
-modalForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  alert("Login successful! (Demo for portfolio)");
-  loginModal.classList.remove("show");
-  modalForm.reset();
-});
-
-// ===== Contact Form Demo =====
-const contactForm = document.querySelector(".contact-form");
-
-contactForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  alert("Message sent! (Demo for portfolio)");
-  contactForm.reset();
+    if (rates[from] && rates[from][to]) {
+        let rate = rates[from][to];
+        let finalAmount = (amtVal * rate).toFixed(2);
+        msg.innerText = `${amtVal} ${from} = ${finalAmount} ${to}`;
+    } else {
+        msg.innerText = "Conversion rate not available!";
+    }
 });
